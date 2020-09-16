@@ -118,7 +118,8 @@ string random_query_expr(int depth, string& input_str, int type)
 			") " + random_arth_op() + " "  + random_num_expr(depth-1);
                 break;
             case 1:
-                expr = "count("+ random_col() + ") " + random_arth_op() + " " + random_num_expr(depth-1);
+                expr = "count("+ random_col() + ") " + random_arth_op() + " " +
+			random_num_expr(depth-1);
                 break;
             case 2:
                 expr = "max(" + random_col() + random_arth_op() + random_num_expr(depth-1) +
@@ -129,8 +130,8 @@ string random_query_expr(int depth, string& input_str, int type)
                         ") " + random_arth_op() + " " + random_num_expr(depth-1);
                 break;
             case 4:
-                expr = "sum(" + random_number() + ", " + random_number() + ") " + random_arth_op()
-			+ " " + random_num_expr(depth-1);
+                expr = "sum(" + random_col() + ") " + random_arth_op() + " " +
+			random_num_expr(depth-1);
                 break;
 	    case 5:
 		expr = "charlength(" + random_query_expr(depth-1, input_str, STRING) + ")";
