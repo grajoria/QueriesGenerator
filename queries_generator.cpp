@@ -73,7 +73,7 @@ string random_number()
 
 string random_num_expr(int depth)
 {
-    if (depth==0)
+    if (depth == 0)
     {
         if ((rand() % 2) == 0)
         {
@@ -114,19 +114,19 @@ string random_query_expr(int depth, string& input_str, int type)
         switch (option = rand() % 7)
         {
             case 0:
-                expr = "avg(" + random_col() + random_arth_op() + random_num_expr(depth-2) +
-			") " + random_arth_op() + " "  + random_num_expr(depth-2);
+                expr = "avg(" + random_col() + random_arth_op() + random_num_expr(depth-1) +
+			") " + random_arth_op() + " "  + random_num_expr(depth-1);
                 break;
             case 1:
                 expr = "count("+ random_col() + ") " + random_arth_op() + " " + random_num_expr(depth-1);
                 break;
             case 2:
-                expr = "max(" + random_col() + random_arth_op() + random_num_expr(depth-2) +
-			") " + random_arth_op() + " " + random_num_expr(depth-2);
+                expr = "max(" + random_col() + random_arth_op() + random_num_expr(depth-1) +
+			") " + random_arth_op() + " " + random_num_expr(depth-1);
                 break;
             case 3:
-                expr = "min(" + random_col() + random_arth_op() + random_num_expr(depth-2) +
-                        ") " + random_arth_op() + " " + random_num_expr(depth-2);
+                expr = "min(" + random_col() + random_arth_op() + random_num_expr(depth-1) +
+                        ") " + random_arth_op() + " " + random_num_expr(depth-1);
                 break;
             case 4:
                 expr = "sum(" + random_number() + ", " + random_number() + ") " + random_arth_op()
@@ -168,6 +168,10 @@ string random_query_expr(int depth, string& input_str, int type)
     else if (type == NUMBER)  // return type randon number
     {
         expr = random_number();
+    }
+    else
+    {
+        expr = "error";
     }
     return expr;
 }
