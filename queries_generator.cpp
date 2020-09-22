@@ -13,7 +13,7 @@ enum Return_type { INTEGER = 0,
 string random_arth_op()
 {
     string op;
-    switch(rand() % 5)
+    switch(rand() % 4)
     {
         case 0:
             op = "+";
@@ -27,9 +27,9 @@ string random_arth_op()
         case 3:
             op = "/";
             break;
-        case 4:
-            op = "^";
-            break;
+       // case 4:
+       //     op = "^";
+       //     break;
     }
     return op;
 }
@@ -61,139 +61,190 @@ string random_compare_op()
     return op;
 }
 
-string random_col()
+string random_col(string& aws_expr)
 {
-    return "int(_" + to_string(1 + (rand() % NUM_COLUMN)) + ")";
+    int num = 1 + (rand() % NUM_COLUMN);
+    aws_expr = "cast(_" + to_string(num) + " as int)";
+    return "int(_" + to_string(num) + ")";
 }
 
-string random_number()
+string random_number(string& aws_expr)
 {
-    return "int(" + to_string(rand() % 10) + ")";
+    int num = rand() % 10;
+    aws_expr = to_string(num);
+    return "int(" + to_string(num) + ")";
 }
 
-string random_num_expr(int depth)
+string random_num_expr(int depth, string& aws_expr)
 {
+    string aws_expr1, aws_expr2, ceph_expr, op;
     if (depth == 0)
     {
         if ((rand() % 2) == 0)
         {
-            return random_col();
+            ceph_expr = random_col(aws_expr1);
+            aws_expr = aws_expr1;
+            return ceph_expr;
         }
         else
         {
-            return random_number();
+            ceph_expr = random_number(aws_expr1);
+	    aws_expr = aws_expr1;
+            return ceph_expr;
         }
     }
-    return random_num_expr(depth-1) + random_arth_op() +
-        random_num_expr(depth-1);
+    op = random_arth_op();
+    ceph_expr = random_num_expr(depth-1, aws_expr1) + op +
+	    random_num_expr(depth-1, aws_expr2);
+    aws_expr = aws_expr1 + op + aws_expr2;
+    return ceph_expr;
 }
 
-string random_query_expr(int depth, string& input_str, int type)
+string random_query_expr(int depth, string& input_str, int type, string& aws_expr)
 {
-    string expr;
+    string ceph_expr;
     if (depth == 0)
     {
         switch (type)
         {
             case INTEGER:
-                expr = random_number();
+                ceph_expr = random_number(aws_expr);
                 break;
             case STRING:
-                expr = "\"" + input_str + "\"";
+                ceph_expr = "\"" + input_str + "\"";
+		aws_expr = "\'" + input_str + "\'";
                 break;
             case MIX_COL_NUM:
-                expr = random_num_expr(depth);
+                ceph_expr = random_num_expr(depth, aws_expr);
                 break;
         }
-        return expr;
+        return ceph_expr;
     }
 
     int option;
     if (type == INTEGER)  //return type is int
     {
+        string ceph_col, aws_col, aws_expr1, aws_expr2, op1, op2;
         switch (option = rand() % 7)
         {
             case 0:
-                expr = "avg(" + random_col() + random_arth_op() + random_num_expr(depth-1) +
-			") " + random_arth_op() + " "  + random_num_expr(depth-1);
+		ceph_col = random_col(aws_col);
+		op1 = random_arth_op();
+		op2 = random_arth_op();
+                ceph_expr = "avg(" + ceph_col + op1 + random_num_expr(depth-1, aws_expr1) + ") " +
+			op2 + " "  + random_num_expr(depth-1, aws_expr2);
+		aws_expr = "avg(" + aws_col + op1 + aws_expr1 + ") " + op2 + " " + aws_expr2;
                 break;
             case 1:
-                expr = "count("+ random_col() + ") " + random_arth_op() + " " +
-			random_num_expr(depth-1);
+                ceph_col = random_col(aws_col);
+		op1 = random_arth_op();
+                ceph_expr = "count(" + ceph_col + ") " + op1 + " " +
+			random_num_expr(depth-1, aws_expr1);
+		aws_expr = "count(" + aws_col + ") " + op1 + " " + aws_expr1;
                 break;
             case 2:
-                expr = "max(" + random_col() + random_arth_op() + random_num_expr(depth-1) +
-			") " + random_arth_op() + " " + random_num_expr(depth-1);
+                ceph_col = random_col(aws_col);
+                op1 = random_arth_op();
+                op2 = random_arth_op();
+                ceph_expr = "max(" + ceph_col + op1 + random_num_expr(depth-1,aws_expr1) + ") " +
+			op2 + " " + random_num_expr(depth-1, aws_expr2);
+		aws_expr = "max(" + aws_col + op1 + aws_expr1 + ") " + op2 + " " + aws_expr2;
                 break;
             case 3:
-                expr = "min(" + random_col() + random_arth_op() + random_num_expr(depth-1) +
-                        ") " + random_arth_op() + " " + random_num_expr(depth-1);
+                ceph_col = random_col(aws_col);
+                op1 = random_arth_op();
+                op2 = random_arth_op();
+                ceph_expr = "min(" + ceph_col + op1 + random_num_expr(depth-1, aws_expr1) + ") " +
+			op2 + " " + random_num_expr(depth-1, aws_expr2);
+		aws_expr = "min(" + aws_col + op1 + aws_expr1 + ") " + op2 + " " + aws_expr2;
                 break;
             case 4:
-                expr = "sum(" + random_col() + ") " + random_arth_op() + " " +
-			random_num_expr(depth-1);
+                ceph_col = random_col(aws_col);
+		op1 = random_arth_op();
+                ceph_expr = "sum(" + ceph_col + ") " + op1 + " " +
+			random_num_expr(depth-1, aws_expr1);
+		aws_expr = "sum(" + aws_col + ") " + op1 + " " + aws_expr1;
                 break;
 	    case 5:
-		expr = "charlength(" + random_query_expr(depth-1, input_str, STRING) + ")";
+		ceph_expr = "charlength(" + random_query_expr(depth-1, input_str, STRING,
+					aws_expr1) + ")";
+		aws_expr = "char_length(" + aws_expr1 + ")";
 		break;
 	    case 6:
-		expr = "characterlength(" + random_query_expr(depth-1, input_str, STRING) + ")";
-		break;
+		ceph_expr = "characterlength(" + random_query_expr(depth-1, input_str, STRING,
+					aws_expr1) + ")";
+		aws_expr = "character_length(" + aws_expr1 + ")";
+                break;
         }
     }
     else if (type == STRING)  // return type is string
     {
+        string aws_expr1, aws_expr2, aws_expr3;
         switch (option = rand() % 3)
         {
             case 0:
-                expr = "lower(" + random_query_expr(depth-1, input_str, STRING) + ")";
+                ceph_expr = "lower(" + random_query_expr(depth-1, input_str, STRING, aws_expr1) +
+                        ")";
+                aws_expr = "lower(" + aws_expr1 + ")";
                 break;
             case 1:
-                expr = "upper(" + random_query_expr(depth-1, input_str, STRING) + ")";
+                ceph_expr = "upper(" + random_query_expr(depth-1, input_str, STRING, aws_expr1) +
+                        ")";
+                aws_expr = "upper(" + aws_expr1 + ")";
                 break;
             case 2:
-                expr = "substr(" + random_query_expr(depth-1, input_str, STRING) + ", " +
-                        random_query_expr(depth-1, input_str, INTEGER) + ", " +
-                        random_query_expr(depth-1, input_str, INTEGER)  + ")";
+                ceph_expr = "substr(" + random_query_expr(depth-1, input_str, STRING, aws_expr1) +
+                        ", " + random_query_expr(depth-1, input_str, INTEGER, aws_expr2) + ", " +
+                        random_query_expr(depth-1, input_str, INTEGER, aws_expr3)  + ")";
+                aws_expr = "substring(" + aws_expr1 + ", " + aws_expr2 + ", " + aws_expr3 + ")";
                 break;
         }
     }
     else if (type == MIX_COL_NUM)
     {
-        expr = random_num_expr(depth-1);
+        //string aws_expr1;
+        ceph_expr = random_num_expr(depth-1, aws_expr);
+	//aws_expr = aws_expr1;
     }
     else if (type == COLUMN)  // return type integer column number
     {
-        expr = random_col();
+        ceph_expr = random_col(aws_expr);
     }
     else if (type == NUMBER)  // return type randon number
     {
-        expr = random_number();
+        ceph_expr = random_number(aws_expr);
     }
     else
     {
-        expr = "error";
+        aws_expr = "error";
+        ceph_expr = "error";
     }
-    return expr;
+    return ceph_expr;
 }
 
 int main()
 {
     srand(time(0));
-    int reps;
-    fstream query_file;
+    int reps, depth;
+    fstream query_file, aws_query_file;
     query_file.open("queries.txt", ios::out);
+    aws_query_file.open("aws_queries.txt", ios::out);
     string input_str = "  $$AbCdEfGhIjKlMnOpQrStUvWxYz##  ";
     cout << "Enter number of quries to be generated: ";
     cin >> reps;
-    if(query_file.is_open()) //checking whether the file is open
+    cout << "Enter depth of queries to be generated: ";
+    cin >> depth;
+    if(query_file.is_open() && aws_query_file.is_open()) //checking whether the file is open
     {
         while (reps)
         {
-            const string input_query = "select " + random_query_expr(3, input_str, (rand() % 3))
-		    				+ " from stdin;";
-            query_file << input_query << endl;
-	    //cout << input_query << endl;
+            string aws_expr;
+	    int type = rand() % 3;
+            const string ceph_query = "select " + random_query_expr(depth, input_str, type,
+			    aws_expr)+ " from stdin;";
+	    const string aws_query = "select " + aws_expr + " from s3object;";
+            query_file << ceph_query << endl;
+	    aws_query_file << aws_query <<endl;
             reps--;
         }
 	query_file.close();
