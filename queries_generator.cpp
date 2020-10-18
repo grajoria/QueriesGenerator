@@ -248,7 +248,7 @@ int main()
     fstream query_file, aws_query_file;
     query_file.open("queries.txt", ios::out);
     aws_query_file.open("aws_queries.txt", ios::out);
-    string input_str = "  $$AbCdEfGhIjKlMnOpQrStUvWxYz##  ";
+    string input_str = "  %%AbCdEfGhIjKlMnOpQrStUvWxYz##  ";
     cout << "Enter number of quries to be generated: ";
     cin >> reps;
     cout << "Enter depth of queries to be generated: ";
@@ -258,12 +258,24 @@ int main()
         while (reps)
         {
             string aws_expr;
-	    int type = rand() % 3;
-            const string ceph_query = "select " + random_query_expr(depth, input_str, type,
-			    aws_expr)+ " from stdin;";
-	    const string aws_query = "select " + aws_expr + " from s3object;";
+            int type;
+            string ceph_query = "select ";
+            string aws_query = "select ";
+	    int projection = rand() % 4;
+            while (projection > 1)
+            {
+                type = rand() % 3;
+                ceph_query = ceph_query + random_query_expr(depth, input_str,
+                                type, aws_expr) + ", ";
+                aws_query = aws_query + aws_expr + ", ";
+		projection--;
+            }
+            type = rand() % 3;
+            ceph_query = ceph_query + random_query_expr(depth, input_str, type,
+                            aws_expr)+ " from stdin;";
+            aws_query = aws_query + aws_expr + " from s3object;";
             query_file << ceph_query << endl;
-	    aws_query_file << aws_query <<endl;
+            aws_query_file << aws_query <<endl;
             reps--;
         }
 	query_file.close();
