@@ -80,6 +80,22 @@ string random_num_expr(int depth, string& aws_expr)
     string aws_expr1, aws_expr2, ceph_expr, op;
     if (depth == 0)
     {
+        ceph_expr = random_number(aws_expr1);
+        aws_expr = aws_expr1;
+        return ceph_expr;
+    }
+    op = random_arth_op();
+    ceph_expr = random_num_expr(depth-1, aws_expr1) + op +
+            random_num_expr(depth-1, aws_expr2);
+    aws_expr = aws_expr1 + op + aws_expr2;
+    return ceph_expr;
+}
+
+string random_num_col_expr(int depth, string& aws_expr)
+{
+    string aws_expr1, aws_expr2, ceph_expr, op;
+    if (depth == 0)
+    {
         if ((rand() % 2) == 0)
         {
             ceph_expr = random_col(aws_expr1);
@@ -94,8 +110,8 @@ string random_num_expr(int depth, string& aws_expr)
         }
     }
     op = random_arth_op();
-    ceph_expr = random_num_expr(depth-1, aws_expr1) + op +
-	    random_num_expr(depth-1, aws_expr2);
+    ceph_expr = random_num_col_expr(depth-1, aws_expr1) + op +
+	    random_num_col_expr(depth-1, aws_expr2);
     aws_expr = aws_expr1 + op + aws_expr2;
     return ceph_expr;
 }
@@ -115,7 +131,7 @@ string random_query_expr(int depth, string& input_str, int type, string& aws_exp
 		aws_expr = "\'" + input_str + "\'";
                 break;
             case MIX_COL_NUM:
-                ceph_expr = random_num_expr(depth, aws_expr);
+                ceph_expr = random_num_col_expr(depth, aws_expr);
                 break;
         }
         return ceph_expr;
@@ -131,22 +147,24 @@ string random_query_expr(int depth, string& input_str, int type, string& aws_exp
 		ceph_col = random_col(aws_col);
 		op1 = random_arth_op();
 		op2 = random_arth_op();
-                ceph_expr = "avg(" + ceph_col + op1 + random_num_expr(depth-1, aws_expr1) + ") " +
-			op2 + " "  + random_num_expr(depth-1, aws_expr2);
-		aws_expr = "avg(" + aws_col + op1 + aws_expr1 + ") " + op2 + " " + aws_expr2;
+                ceph_expr = "int(avg(" + ceph_col + op1 + random_num_col_expr(depth-1, aws_expr1) +
+                        ") " + op2 + " "  + random_num_expr(depth-1, aws_expr2) + ")";
+		aws_expr = "cast((avg(" + aws_col + op1 + aws_expr1 + ") " + op2 + " " + aws_expr2 +
+                        ") as int)";
                 break;
             case 1:
                 ceph_col = random_col(aws_col);
 		op1 = random_arth_op();
-                ceph_expr = "count(" + ceph_col + ") " + op1 + " " +
-			random_num_expr(depth-1, aws_expr1);
-		aws_expr = "count(" + aws_col + ") " + op1 + " " + aws_expr1;
+		op2 = random_arth_op();
+                ceph_expr = "count(" + ceph_col + op1 + random_num_col_expr(depth-1, aws_expr1) +
+			") " + op2 + " " + random_num_expr(depth-1, aws_expr2);
+		aws_expr = "count(" + aws_col + op1 + aws_expr1 + ") " + op2 + " " + aws_expr2;
                 break;
             case 2:
                 ceph_col = random_col(aws_col);
                 op1 = random_arth_op();
                 op2 = random_arth_op();
-                ceph_expr = "max(" + ceph_col + op1 + random_num_expr(depth-1,aws_expr1) + ") " +
+                ceph_expr = "max(" + ceph_col + op1 + random_num_col_expr(depth-1,aws_expr1) + ") " +
 			op2 + " " + random_num_expr(depth-1, aws_expr2);
 		aws_expr = "max(" + aws_col + op1 + aws_expr1 + ") " + op2 + " " + aws_expr2;
                 break;
@@ -154,16 +172,17 @@ string random_query_expr(int depth, string& input_str, int type, string& aws_exp
                 ceph_col = random_col(aws_col);
                 op1 = random_arth_op();
                 op2 = random_arth_op();
-                ceph_expr = "min(" + ceph_col + op1 + random_num_expr(depth-1, aws_expr1) + ") " +
+                ceph_expr = "min(" + ceph_col + op1 + random_num_col_expr(depth-1, aws_expr1) + ") " +
 			op2 + " " + random_num_expr(depth-1, aws_expr2);
 		aws_expr = "min(" + aws_col + op1 + aws_expr1 + ") " + op2 + " " + aws_expr2;
                 break;
             case 4:
                 ceph_col = random_col(aws_col);
 		op1 = random_arth_op();
-                ceph_expr = "sum(" + ceph_col + ") " + op1 + " " +
-			random_num_expr(depth-1, aws_expr1);
-		aws_expr = "sum(" + aws_col + ") " + op1 + " " + aws_expr1;
+		op2 = random_arth_op();
+                ceph_expr = "sum(" + ceph_col + op1 + random_num_col_expr(depth-1, aws_expr1) +
+                        ") " + op2 + " " + random_num_expr(depth-1, aws_expr2);
+		aws_expr = "sum(" + aws_col + op1 + aws_expr1 + ") " + op2 + " " + aws_expr2;
                 break;
 	    case 5:
 		ceph_expr = "charlength(" + random_query_expr(depth-1, input_str, STRING,
@@ -203,7 +222,7 @@ string random_query_expr(int depth, string& input_str, int type, string& aws_exp
     else if (type == MIX_COL_NUM)
     {
         //string aws_expr1;
-        ceph_expr = random_num_expr(depth-1, aws_expr);
+        ceph_expr = random_num_col_expr(depth-1, aws_expr);
 	//aws_expr = aws_expr1;
     }
     else if (type == COLUMN)  // return type integer column number
